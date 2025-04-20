@@ -1,7 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-
+const {isValidLogin} = require('@hiephinh/share')
 
 exports.fetchAllUsers = async (req, res) => {
     try {
@@ -82,9 +82,11 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   try {
     const { phoneNumber, password } = req.body;
+    // Kiểm tra định dạng số điện thoại và mật khẩu
+   if(isValidLogin(phoneNumber, password)) {
     // Tìm người dùng trong cơ sở dữ liệu
     const user = await User.findOne({ phoneNumber });
-    if (user.length === 0) {
+    if (user === null) {
       return res.status(400).json({ message: 'Người dùng không tồn tại' });
     }
     // Kiểm tra mật khẩu
@@ -110,9 +112,14 @@ exports.login = async (req, res) => {
       },
       token,
     });
+    }
   } catch (error) {
-    console.error(error);
-    res.status(500).send('Lỗi khi đăng nhập');
-    
+    const errName = error.name || 'Error';
+    const errMessage = error.message || 'Lỗi khi đăng nhập người dùng';
+    const errStatusCode = error.statusCode || 500;
+    return res.status(errStatusCode).json({
+      name: errName,
+      message: errMessage,
+    });
   }
 }
